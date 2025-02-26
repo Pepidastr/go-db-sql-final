@@ -34,6 +34,7 @@ func TestAddGetDelete(t *testing.T) {
 	// prepare
 	db, err := sql.Open("sqlite", "tracker.db") // настройте подключение к БД
 	require.NoError(t, err)
+	defer db.Close()
 	store := NewParcelStore(db)
 	parcel := getTestParcel()
 
@@ -47,10 +48,8 @@ func TestAddGetDelete(t *testing.T) {
 	// проверьте, что значения всех полей в полученном объекте совпадают со значениями полей в переменной parcel
 	parcelGet, err := store.Get(id)
 	require.NoError(t, err)
-	assert.Equal(t, parcelGet.Client, parcel.Client)
-	assert.Equal(t, parcelGet.Status, parcel.Status)
-	assert.Equal(t, parcelGet.Address, parcel.Address)
-	assert.Equal(t, parcelGet.CreatedAt, parcel.CreatedAt)
+	parcel.Number = id
+	assert.Equal(t, parcel, parcelGet)
 	// delete
 	// удалите добавленную посылку, убедитесь в отсутствии ошибки
 	// проверьте, что посылку больше нельзя получить из БД
@@ -65,6 +64,7 @@ func TestSetAddress(t *testing.T) {
 	// prepare
 	db, err := sql.Open("sqlite", "tracker.db") // настройте подключение к БД
 	require.NoError(t, err)
+	defer db.Close()
 	store := NewParcelStore(db)
 	parcel := getTestParcel()
 	// add
@@ -81,7 +81,7 @@ func TestSetAddress(t *testing.T) {
 	// получите добавленную посылку и убедитесь, что адрес обновился
 	parcelGet, err := store.Get(id)
 	require.NoError(t, err)
-	assert.Equal(t, parcelGet.Address, newAddress)
+	assert.Equal(t, newAddress, parcelGet.Address)
 }
 
 // TestSetStatus проверяет обновление статуса
@@ -89,6 +89,7 @@ func TestSetStatus(t *testing.T) {
 	// prepare
 	db, err := sql.Open("sqlite", "tracker.db") // настройте подключение к БД
 	require.NoError(t, err)
+	defer db.Close()
 	store := NewParcelStore(db)
 	parcel := getTestParcel()
 	// add
@@ -112,6 +113,7 @@ func TestGetByClient(t *testing.T) {
 	// prepare
 	db, err := sql.Open("sqlite", "tracker.db") // настройте подключение к БД
 	require.NoError(t, err)
+	defer db.Close()
 	store := NewParcelStore(db)
 
 	parcels := []Parcel{
@@ -149,10 +151,9 @@ func TestGetByClient(t *testing.T) {
 
 	// check
 	for _, parcel := range storedParcels {
-		assert.Equal(t, parcelMap[parcel.Number].Client, parcel.Client)
-		assert.Equal(t, parcelMap[parcel.Number].Status, parcel.Status)
-		assert.Equal(t, parcelMap[parcel.Number].Address, parcel.Address)
-		assert.Equal(t, parcelMap[parcel.Number].CreatedAt, parcel.CreatedAt)
+		assert.Contains(t, parcels, parcel) //Сделал так потому что как мне кажется ->
+		// assert.Contains(t, parcelMap[parcel.Number], parcel) тоже самое что и assert.Equal(t, parcelMap[parcel.Number], parcel) и энивей все parcels есть в parcelMap
+		assert.Equal(t, parcelMap[parcel.Number], parcel)
 		// в parcelMap лежат добавленные посылки, ключ - идентификатор посылки, значение - сама посылка
 		// убедитесь, что все посылки из storedParcels есть в parcelMap
 		// убедитесь, что значения полей полученных посылок заполнены верно
